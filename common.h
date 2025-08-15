@@ -17,21 +17,11 @@ extern cell pstack[];
 extern cell rstack[];
 extern cell code[];
 extern char dict[];
-extern int ip, pp, rp;
+extern int ip, pp, rp, cp;
+extern iwordFunc iwords[];
 
-void iwRet(void);
-void iwBye(void);
-void iwEmit(void);
-void iwKey(void);
-void iwDot(void);
-void iwAdd(void);
-void iwSub(void);
-void iwMul(void);
-void iwDiv(void);
-void iwDup(void);
-void iwOver(void);
-void iwPick(void);
-void iwDrop(void);
+void wordAdd(char* w, cell addr);
+void initIwords(void);
 
 #endif
 

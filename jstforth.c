@@ -7,13 +7,10 @@ cell rstack[256];
 cell code[16384];
 char dict[16384] = {0};
 int ip, pp, rp, cp, mode;
+FILE* input;
 
-iwordFunc iwords[] = {iwRet, iwBye, iwEmit, iwKey, iwDot, iwAdd, iwSub,
-    iwMul, iwDiv, iwDup, iwOver, iwPick, iwDrop};
-char* iwordNames[] = {"ret", "bye", "emit", "key", ".", "+", "-", "*", "/",
-    "dup", "over", "pick", "drop"};
 void wordAdd(char* w, cell addr) {
-    char* next = (void*) dict;
+   char* next = (void*) dict;
     while (*next)
         next += *next + sizeof(cell) + 1; 
     *next = strlen(w);
@@ -58,7 +55,7 @@ void run(void) {
                 break;
             case UWMASK:
                 rstack[rp++] = ip;
-                cp = (w & ~UWMASK);
+                ip = (w & ~UWMASK);
                 break;
             default:
                 pstack[pp++] = w;
@@ -73,6 +70,8 @@ int trynum(char* s, cell* res) {
         sign = -1;
         s++;
     }
+    if (!*s)
+        return 0;
     for (; *s; s++) {
         if (*s < '0' || *s > '9')
             return 0;
@@ -124,7 +123,7 @@ void doWord(char* w) {
     if (wcode & IWMASK)
         iwords[wcode & ~IWMASK]();
     else {
-        cp = (wcode & ~UWMASK);
+        ip = (wcode & ~UWMASK);
         run();
     }
 }
@@ -133,7 +132,7 @@ void repl(void) {
     char wbuf[32];
     int c, wlen = 0;
     do {
-        int c = fgetc(stdin);
+        c = fgetc(input);
         if (c > ' ') {
             wbuf[wlen++] = c;
             continue;
@@ -143,19 +142,24 @@ void repl(void) {
             doWord(wbuf);
             wlen = 0;
         }
-        if (c == 13 || c == 10 || c < 0)
-            printf(" ok\n");
+        if ((c == 13 || c == 10 || c < 0) && input == stdin)
+            if (!mode)
+                printf(" ok <%d>\n", pp);
+            else
+                printf(" compiling...\n");
     } while (c >= 0);
 }
 
 void initDict(void) {
-    for (int i = 1; i < sizeof(iwords) / sizeof(*iwords); i++)
-        wordAdd(iwordNames[i], IWMASK | i);
+    initIwords();
 }
 
-int main(void) {
+int main(int argc, char** argv) {
     ip = pp = rp = cp = mode = 0;
     initDict();
+    input = (argc == 1) ? stdin : fopen(argv[1], "rb");
     repl();
+    if (input != stdin)
+        fclose(input);
 }
 
